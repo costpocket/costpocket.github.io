@@ -1,0 +1,214 @@
+<html>
+
+<head>
+    <script src="https://unpkg.com/vue@next"
+        crossorigin="anonymous" referrerpolicy="no-referrer"
+    ></script>
+    <script src="https://unpkg.com/dompurify@2.3.1/dist/purify.js"
+        crossorigin="anonymous" referrerpolicy="no-referrer"
+    ></script>
+
+    <script src="https://unpkg.com/marked@3.0.2"
+        crossorigin="anonymous" referrerpolicy="no-referrer"
+    ></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.2.0/styles/stackoverflow-light.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.2.0/highlight.min.js"></script>
+
+    <!-- and it's easy to individually load additional languages -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.2.0/languages/json.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.2.0/languages/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.2.0/languages/bash.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+
+    <style>
+
+        html, #app {
+            height: 100%;
+            width: 100%;
+        }
+
+        #menu, #preview {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+        }
+
+        #menu {
+            margin: 0px;
+            z-index: 10;
+            top: 0px;
+            left: 0px;
+            position: fixed;
+            background-color: #e4e8eb;
+            height: 100%;
+            width: 270px;
+        }
+
+        #menu-items {
+            width: calc(100% - 40px);
+            height: 100%;
+
+            font-size: 14px;
+            line-height: 32px;
+            padding: 20px;
+        }
+
+        #menu ul {
+            list-style-type: none;
+            margin: 0px;
+            padding: 0px;
+        }
+
+        #menu li {
+            padding: 0px 10px;
+            border-radius: 4px;
+        }
+
+        #menu li:hover {
+            background-color: #d0d5d8;
+            cursor: pointer;
+        }
+
+        #preview {
+            z-index: 0;
+            margin: 0px;
+            position: absolute;
+            height: 100%;
+            left: 270px;
+            width: calc(100% - 270px);
+            display: inline-block;
+            vertical-align: top;
+            box-sizing: border-box;
+            padding: 0 20px;
+
+            font-size: 14px;
+            line-height: 22px;
+        }
+
+        h1, h2, h3 {
+            font-weight: normal;
+        }
+
+        pre {
+            padding: 5px;
+            background-color: #eeecec;
+            border-radius: 3px;
+        }
+
+        svg {
+            margin: 0 auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div id="menu">
+            <div id="menu-items">
+                <ul v-on:click="navigate($event)">
+                </ul>
+            </div>
+        </div>
+        <div id="preview" v-html="compiledMarkdown"></div>
+    </div>
+
+    <script>
+        const app = Vue.createApp({
+            data() {
+                return {
+                    input: '# hello',
+                    file: 'home'
+                }
+            },
+            created() {
+                this.loadData()
+            },
+            updated() {
+                mermaid.init(undefined);
+            },
+            methods: {
+                navigate(ev) {
+                    for (var el of ev.target.parentElement.children) {
+                        el.style.backgroundColor = ''
+                    }
+
+                    ev.target.style.backgroundColor = '#d0d5d8';
+
+                    this.file = ev.target.getAttribute('content')
+                    this.loadData()
+                },
+                async loadData() {
+                    try {
+                        let res = await fetch(`./content/spec/${this.file}.md`);
+                        this.input = await res.text();
+                    }
+                    catch(e) {
+                        console.log(e)
+                    }
+                }
+            },
+            watch: {
+                file() {
+                    this.loadData()
+                }
+            },
+            computed: {
+                compiledMarkdown() {
+                    const md = this.input.replace(/<div style="page-break-before: always"><\/div>/g, '<br>')
+
+                    const isMermaid = function(code) {
+                        return code.match(/^sequenceDiagram/)
+                            || code.match(/^graph/)
+                            || code.match(/^flowchart/)
+                    }
+
+                    const hl = function (code, language) {
+                        if (language && hljs.getLanguage(language)) {
+                            try {
+                                return hljs.highlight(code, {
+                                    language
+                                }).value;
+                            }
+                            catch (err) {
+                                console.log(err)
+                            }
+                        }
+
+                        try {
+                            return hljs.highlightAuto(code).value;
+                        }
+                        catch (err) {
+                            console.log(err)
+                        }
+                    
+                        return '';
+                    }
+
+                    const defaultRenderer = new marked.Renderer({
+                        highlight: hl
+                    });
+
+                    const renderer = new marked.Renderer();
+
+                    renderer.code = function (code, language) {
+                        if(isMermaid(code)){
+                            return '<div class="mermaid">' + `%%{init: {'theme':'base'}}%%\r\n` + code + '</div>';
+                        }
+                        else{
+                            return defaultRenderer.code(code, language);
+                        }
+                    };
+
+                    return marked(md, {
+                        sanitizer: DOMPurify.sanitize,
+                        renderer
+                    })
+                }
+            }
+        })
+
+        app.mount('#app')
+    </script>    
+</body>
+
+</html>
