@@ -93,6 +93,8 @@
             padding: 5px;
             background-color: #eeecec;
             border-radius: 3px;
+            
+            font-size: 12px;
         }
 
         svg {
@@ -194,7 +196,7 @@
 
                     renderer.code = function (code, language) {
                         if(isMermaid(code)){
-                            return '<div class="mermaid">' + `%%{init: {'theme':'base'}}%%\r\n` + code + '</div>';
+                            return '<div class="mermaid">' + `%%{init: {'theme':'base', 'themeVariables': {'fontSize': '12px', 'fontFamily': 'inherit'}}}%%\r\n` + code + '</div>';
                         }
                         else{
                             return defaultRenderer.code(code, language);
