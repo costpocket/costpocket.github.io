@@ -8,7 +8,7 @@ Accounting software integration with CostPocket expense management solutions
 
 # Introduction
 
-This is the complete guide for integration solutions with CostPocket. CostPocket is a complete expense management solution that provides an app for submitting and approving expenses, a cloud solution for managing  organization expenses and various workflow automation tools.
+This is the complete guide for integration solutions with CostPocket. CostPocket is an expense management solution that provides an app for submitting and approving expenses, a cloud solution for managing  organization expenses and various workflow automation tools.
 
 In this guide we will demonstrate how to integrate your accounting solution with CostPocket in order to provide your clients the best tools for expense management. This guide is aimed at both business analysts as well as developers. We will be providing flow diagrams, type definitions and API call examples.
 
@@ -52,7 +52,7 @@ Accountants can additionally use [CostPocket cloud](https://cloud.costpocket.com
 
 ## Development and release flow
 
-When building and testing the integration, you will be using CostPocket's dev/prelive environment. The dev environment applications are hosted in the following addresses:
+When building and testing the integration, you will be using CostPocket's dev/prelive environment. Applications are hosted in the following addresses:
 
 - Dev/Prelive
     - App: (https://app.pre.costpocket.com)
@@ -89,7 +89,7 @@ The service activation requires to know the following information about the clie
     -  **Address** (address) - Company registration address - street name and building number (optional).
     - **City** (city) - The city in the full registration address (optional).
     - **ZIP code** - (zip) - The postal code in the full registration address (optional).
-    - **BCX code** (bcx) - This is a special parameter that is used to associate a specific organization in your accounting software with specific company in CostPocket. If you are hosting your client's data in cloud then you can use the primary key value of the organization record or any other unique identifier. If your client's data in on-premises, then you need to generate this using random values and save it in client's application. It is recommended to make this value visible to the client. The minimum required length for randomly generated BCX code is 64 bytes. For example using OpenSSL: `openssl rand --hex 32`. If this value has been already generated and saved previously, then it should be reused with every new request.
+    - **BCX code** (bcx) - This is a special parameter that is used to associate a specific organization in your accounting software with specific company in CostPocket. If you are hosting your client's data in cloud then you can use the primary key value of the organization record or any other unique identifier. If your client's data is on-premises, then you need to generate this using random values and save it in client's application. It is recommended to make this value visible to the client. The minimum required length for randomly generated BCX code is 64 bytes. For example using OpenSSL: `openssl rand --hex 32`. If this value has been already generated and saved previously, then it should be reused with every new request.
 
 2. Administrator user info (user). This is the user who will be assigined administrator rights in the registered company.
     - **First name** (firstName) - First name of the user. If they have multiple names, then use all names except the last family name as first name.
@@ -130,7 +130,7 @@ When the organization already exists in CostPocket, then our system will force a
 }
 ```
 
-The confirmation notice is sent to company administrators email. They will then require to login to CostPocket app and confirm the integration. In this case we require that you also display this information to your user as well, notifying them that they need to check their email and follow the instructions to complete this setup.
+The confirmation notice is sent to company administrators email. They will then be required to login to CostPocket app and confirm the integration. In this case we require that you also display this information to your user as well, notifying them that they need to check their email and follow the instructions to complete this setup.
 
 <br>
 
@@ -246,7 +246,7 @@ sequenceDiagram
 The service activation response will additionally contain credentials for S2S API.
 
 
-Example service activation request, using the example key *c804c1194d301eef913ff0bdc5be3190*:
+Example service activation request:
 ```
 POST /{partnerId}/subscribe
 
@@ -315,7 +315,7 @@ loop Every X minutes
 end
 ```
 
-Detailed API usage description is provided in [S2S API]().
+Detailed API usage description is provided in S2S API.
 
 ## Online integration
 
