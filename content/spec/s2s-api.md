@@ -5,8 +5,9 @@ CostPocket Service to Service API
 
 - **DOCS**: https://api.costpocket.com/s2s
 - **BASEURL**: https://api.costpocket.com/s2s/v1
-- **VERSION**: 1.0.11
-- **LAST UPDATE**: 2021/01/24
+- **DOCUMENT VERSION**: 1.0.12
+- **API VERSION**: 1.4.3
+- **LAST UPDATE**: 2022/11/16
 
 <br>
 
@@ -93,11 +94,11 @@ end
         "documentId": 1002,
         "received": false,
         "error": {
-            "reasonPhrase": "Import failed because ... (this field will become visible for users in the future)"
+            "reasonPhrase": "Import failed because ..."
         }
     }
     ```
-    **This is a planned feature!** Please contact technical support if your accounting system can provide processing error information. At the moment all processed or failed to process documents must be marked as "received".
+    NB! The `error.reasonPhrase` is not currently saved or shown to the user - this is a planned feature.
 
 ## Retrieving documents and reports
 
@@ -108,9 +109,11 @@ CP allows specifying the customer how do they want the documents to be imported 
 
 This example provides how to use the API in order to (3) import reports and single documents. Please read the example [Status based document retrieval](<#Status based document retrieval>) before continuing.
 
-In order to not include documents that are part of reports in the `GET /expenses/documents` the following filter must be added: `tripId~null`. The example request to get only single documents becomes `GET /expenses/documents?where=tripId~null&orderby=id&status=!received`.
+In order to exclude documents that are part of reports in the `GET /expenses/documents` the following filter must be added: `tripId~null`. The example request to get only single documents becomes `GET /expenses/documents?where=tripId~null&orderby=id&status=!received`.
 
-Reports ready for processing can be retrieved with `GET /expenses/reports?status=!received`. Once the report has been processed in the client system, the report status can be updated with `PUT /expenses/reports/:reportId/status`:
+Reports ready for processing can be retrieved with `GET /expenses/reports?status=!received`.
+
+Once the report has been processed in the client system, the report status can be updated with `PUT /expenses/reports/:reportId/status`:
 ```json
 {
     "received": true,
@@ -120,10 +123,40 @@ Reports ready for processing can be retrieved with `GET /expenses/reports?status
 }
 ```
 
+It is also possible (but not necessary) to notify CostPocket when document or report is deleted in the accounting system. This will effectively reset the expense to the pre-departure state:
+```json
+{
+    "deleted": true
+}
+```
+
+Document statuses can be managed via endpoint `PUT /expenses/documents/status`:
+```json
+[
+    {
+        "documentId": 1001,
+        "received": true,
+        "reference": "R452"
+    }, {
+        "documentId": 1003,
+        "received": true,
+        "reference": "R456"
+    },
+    {
+        "documentId": 1003,
+        "deleted": true
+    }
+]
+```
+
 <div style="page-break-before: always"></div>
 
 # Changelog
 
 ### 1.0.11
 
-1) It is no longer required to pass filter `digitized=true` for querying documents. It is sufficient to only use status=received and status=!received for status control.
+- It is no longer required to pass filter `digitized=true` for querying documents. It is sufficient to only use status=received and status=!received for status control.
+
+### 1.0.12
+
+- Defined `deleted` option when updating document statuses.
