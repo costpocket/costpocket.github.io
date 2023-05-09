@@ -1,7 +1,7 @@
 Accounting software integration with CostPocket expense management solutions
 ---
 
-**Version**: 2022/05/12
+**Version**: 2023/05/09
 
 <br>
 <br>
@@ -353,12 +353,104 @@ HEADERS:
     bcx: af706bdaa3d1b701ef28ea1ea0e3e8e35ae93d19b02906e93a8c3060ff8fa0df
 RESPONSE:
 {
-    "sendingEnabled": true,
-    "receivingEnabled": true
+    "sendingEnabled": true, // backward compatibility
+    "receivingEnabled": true,  // backward compatibility
+    "roamings": [{
+        "regions": ["EE"],
+        "sendingEnabled": true,
+        "receivingEnabled": true,
+        "contractStatus": "OK"
+    }]
 }
 ```
 
-When flag "sendingEnabled" is true, then the client has a valid contract with the roaming vendor, and you can start sending einvoices through CostPocket.
+The response includes a list of roamings where the clients has an einvoicing contract. Each roaming contains the regions that it supports (ISO3166-1 alpha-2), sending and receiving availability and if the contract for this roaming is valid (OK). The contract is made between the client and CostPocket or a third Party servicing CostPocket for einvoice delivery and acceptance. Contract approval is not always realtime, for example Estonian operators require contract acceptance in Business Registry Portal. When contract is pending approval then the "contractStatus" is `EINVOICING_CONTRACT_PENDING_APPROVAL`.
+
+<br>
+
+### Activating einvoicing
+
+NB! This function is only available for partners using  "Service activation for online integrations" flow v1.
+
+If a client does not have einvoicing active in preferred roaming (region), then it is possible to start the activation for the client. if activation cannot be completed immediatelly, then it is completed asynchronously and the "contractStatus" updates in the background.
+
+For example, a client may be required to go to an external portal to accept the contract or CostPocket may require to verify the client's identity.
+
+```
+POST /{partnerId}/einvoicing/activate
+HEADERS:
+    Content-Type: application/vnd.cp.einvoice.ee+xml
+    bcx: af706bdaa3d1b701ef28ea1ea0e3e8e35ae93d19b02906e93a8c3060ff8fa0df
+BODY:
+    {
+        "region": "EE",
+        "sendingEnabled": true,
+        "receivingEnabled": true
+    }
+RESPONSE:
+    {
+        "contractStatus": "OK"
+    }
+```
+
+Contract status can be any of the following:
+- `OK` - Contract was successfully created.
+- `EINVOICING_CONTRACT_PENDING_APPROVAL` - Client needs to accept the contract or client verification by CostPocket is pending.
+- `EINVOICING_CONTRACT_ALREADY_EXISTS` - Client already has a valid contract. This exception occurs when you try to activate it for a client that already has a contract.
+
+<br>
+
+### Dectivating einvoicing
+
+NB! This function is only available for partners using  "Service activation for online integrations" flow v1.
+
+```
+POST /{partnerId}/einvoicing/deactivate
+HEADERS:
+    Content-Type: application/vnd.cp.einvoice.ee+xml
+    bcx: af706bdaa3d1b701ef28ea1ea0e3e8e35ae93d19b02906e93a8c3060ff8fa0df
+BODY:
+    {
+        "region": "EE"
+    }
+RESPONSE:
+    {
+        "contractStatus": "TERMINATED"
+    }
+```
+
+Contract status can be any of the following:
+- `TERMINATED` - Contract was successfully terminated.
+- `EINVOICING_CONTRACT_NOT_VALID` - Contract is invalid and cannot be cancelled (this is an exception from the actual einvoice operator, who provides the service to CostPocket)
+- `EINVOICING_CONTRACT_NOT_PRESENT` - Contract is not present, cannot cancel.
+
+<br>
+
+### Performing receiver lookup
+
+In order to determine if a particular entity can receive einvoices, it is strictly recommended that a lookup query is performed. Lookup query can be done using entity name, registration code or VAT code. The lookup can return multiple results since entities can have similar names. You must provide the entity country code in the lookup query.
+
+```
+GET /{partnerId}/einvoicing/receivers?countryCode=EE&regCode=14016832
+RESPONSE:
+    [{
+        "countryCode": "EE",
+        "name": null,
+        "VATNumber": null,
+        "regCode": "14016832",
+        "channel": "RIK"
+    }]
+```
+
+The accepted query parameters for the lookup are:
+- `countryCode` - Country code (ISO3166-1 alpha-2).
+- `name` - Name of the entity (optional).
+- `regCode` - Business registry issued code for the entity (optional).
+- `VATNumber` - VAT number of the entity (optional. Note that in some countries, like Estonia, organizations of the same branch can share the VAT number.
+
+The response may contain additional information, such as `channel`, which indicates the service provider used by the entity to receive einvoices. Some information (such as name) is sometimes ommited, if it is not present in einvoice registry.
+
+It is highly recommended to use regCode for entity lookup.
 
 <br>
 
@@ -368,6 +460,7 @@ Einvoices can be sent in various formats. CostPocket automatically converts them
 - **application/vnd.cp.einvoice.ee+xml** - Estonian Einvoice standard, version 1.2
 - **application/vnd.cp.finvoice.v3+xml** - Finnish Einvoice (Finvoice) standard, version 3+
 - **application/vnd.cp.expensedoc.v1+json** - CostPocket ExpenseDoc format, version 1
+- **application/vnd.cp.ubl.billing.v3+xml** - Peppol BIS Billing, version 3.0
 
 Select the most convenient format for your application. Perhaps you are even using some of them already?!
 
